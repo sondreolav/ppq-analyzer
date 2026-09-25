@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="nn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -71,20 +71,60 @@
             border-bottom: 2px solid #eee;
         }
         h2:first-of-type { margin-top: 0; }
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            margin: 20px 0;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
             font-size: 0.95rem;
-            overflow-x: auto;
         }
         th, td {
             padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid #ddd;
+            white-space: nowrap;
         }
-        th { background: #f8f5ff; color: #6d4aff; font-weight: 600; }
-        tr:hover { background: #faf9fc; }
+        th {
+            background: #f8f5ff;
+            color: #6d4aff;
+            font-weight: 600;
+        }
+        th:last-child, td:last-child { border-right: none; }
+        tbody tr:hover { background: #faf9fc; }
+        .sort-button {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            font-weight: inherit;
+            cursor: pointer;
+            text-align: left;
+        }
+        .sort-button:hover { color: #4e30c9; }
+        .sort-button:focus-visible {
+            outline: 2px solid #6d4aff;
+            outline-offset: 2px;
+            border-radius: 3px;
+        }
+        .sort-indicator {
+            min-width: 1.1em;
+            text-align: center;
+            font-size: 0.85rem;
+            opacity: 0.45;
+        }
+        .sort-button[aria-sort="ascending"] .sort-indicator,
+        .sort-button[aria-sort="descending"] .sort-indicator { opacity: 1; }
         .metric-card {
             display: inline-block;
             background: linear-gradient(135deg, #6d4aff 0%, #8b5cf6 100%);
@@ -141,50 +181,47 @@
     <div class="container">
         <header>
             <h1>📊 PPQ Cost Analyzer</h1>
-            <p>Drag & drop CSV-fila di her - alle data held seg lokalt!</p>
+            <p>Drag &amp; drop a CSV file here — all data stays local!</p>
         </header>
-        
+
         <section class="upload-section" id="uploadSection">
             <div class="upload-area" id="uploadArea">
                 <div style="font-size: 3rem; margin-bottom: 15px;">📄</div>
-                <div style="font-size: 1.2rem; margin-bottom: 10px;"><strong>Drag & drop CSV-fila her</strong></div>
-                <div style="color: #666;">eller klikk for å velje fil</div>
+                <div style="font-size: 1.2rem; margin-bottom: 10px;"><strong>Drag &amp; drop a CSV file here</strong></div>
+                <div style="color: #666;">or click to select a file</div>
             </div>
-            
+
             <input type="file" id="fileInput" accept=".csv" style="display:none">
-            
+
             <div class="status-msg" id="statusMsg"></div>
-            
             <div class="file-info" id="fileInfo"></div>
-            
-            <button class="analyze-btn" id="analyzeBtn">Analyser data</button>
-            
+            <button class="analyze-btn" id="analyzeBtn">Analyze data</button>
+
             <div class="debug-log" id="debugLog">
                 <strong>Debug:</strong><br>
             </div>
         </section>
-        
+
         <section class="report-section" id="reportSection">
             <div class="privacy-note">
-                🔒 Alle data blir handtert lokalt i nettlesaren din. Ingen data blir sende ut.
+                🔒 All data is processed locally in your browser. Nothing is uploaded.
             </div>
-            
-            <h2>📊 Sammendrag</h2>
+
+            <h2>📊 Summary</h2>
             <div id="summaryMetrics"></div>
-            
-            <h2>💰 Kostnad per modell</h2>
+
+            <h2>💰 Cost by model</h2>
             <div id="modelTableContainer"></div>
-            
-            <h2>📅 Dagleg fordeling</h2>
+
+            <h2>📅 Daily breakdown</h2>
             <div id="dailyTableContainer"></div>
-            
-            <h2>⚠️ Anomalier</h2>
+
+            <h2>⚠️ Anomalies</h2>
             <div id="anomalies"></div>
         </section>
     </div>
-    
+
     <script>
-        // Debug-funksjon
         function log(msg) {
             const debugLog = document.getElementById('debugLog');
             debugLog.style.display = 'block';
@@ -192,227 +229,174 @@
             debugLog.scrollTop = debugLog.scrollHeight;
             console.log('[PPQ Analyzer]', msg);
         }
-        
+
         function showStatus(msg, isError = false) {
             const statusEl = document.getElementById('statusMsg');
             statusEl.style.display = 'block';
             statusEl.className = 'status-msg ' + (isError ? 'status-error' : 'status-success');
             statusEl.textContent = msg;
         }
-        
-        // Globale variablar
+
         let csvData = [];
         let rawData = '';
-        
+
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const fileInfo = document.getElementById('fileInfo');
         const analyzeBtn = document.getElementById('analyzeBtn');
         const reportSection = document.getElementById('reportSection');
         const uploadSection = document.getElementById('uploadSection');
-        
-        log('Init start...');
-        
-        // Klikk for å open filveljar
-        uploadArea.addEventListener('click', () => {
-            log('Upload area clicked');
-            fileInput.click();
-        });
-        
-        // Drag & drop
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
-            e.stopPropagation();
             uploadArea.classList.add('dragover');
-            log('Drag over');
         });
-        
+
         uploadArea.addEventListener('dragleave', (e) => {
             e.preventDefault();
-            e.stopPropagation();
             uploadArea.classList.remove('dragover');
-            log('Drag leave');
         });
-        
+
         uploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
-            e.stopPropagation();
             uploadArea.classList.remove('dragover');
-            log('Drop event');
-            
-            const files = e.dataTransfer.files;
-            log(`Dropped ${files.length} file(s)`);
-            
-            if (files.length > 0) {
-                handleFile(files[0]);
-            }
+            if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
         });
-        
-        // Filveljar
+
         fileInput.addEventListener('change', (e) => {
-            log(`File input change, ${e.target.files.length} file(s)`);
-            if (e.target.files.length > 0) {
-                handleFile(e.target.files[0]);
-            }
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
         });
-        
-        // Analyse-knapp
-        analyzeBtn.addEventListener('click', () => {
-            log('Analyze button clicked');
-            generateReport();
-        });
-        
+
+        analyzeBtn.addEventListener('click', generateReport);
+
         function handleFile(file) {
-            log(`Handling file: ${file.name} (${formatSize(file.size)} bytes)`);
-            
             if (!file.name.toLowerCase().endsWith('.csv')) {
-                showStatus('Feil! Vennligst last opp ei .csv-fil', true);
-                log('Error: Not a CSV file');
+                showStatus('Error: Please upload a .csv file.', true);
                 return;
             }
-            
+
             const reader = new FileReader();
-            
             reader.onload = (event) => {
                 rawData = event.target.result;
-                log(`File read successfully, ${rawData.length} characters`);
-                
-                // Sjekk første raden for debugging
-                const firstLines = rawData.split('\n').slice(0, 3);
-                log('First 3 lines:');
-                firstLines.forEach((line, i) => log(`  Line ${i}: ${line.substring(0, 100)}`));
-                
                 fileInfo.style.display = 'block';
-                fileInfo.innerHTML = `✅ <strong>${file.name}</strong><br>Storleik: ${formatSize(file.size)} | Ready to analyze`;
-                
+                fileInfo.innerHTML = `✅ <strong>${escapeHtml(file.name)}</strong><br>Size: ${formatSize(file.size)} | Ready to analyze`;
                 analyzeBtn.style.display = 'inline-block';
                 analyzeBtn.disabled = false;
-                
-                showStatus('Filen er lasta opp! Trykk på "Analyser data" for å starte.', false);
+                showStatus('File loaded! Click "Analyze data" to start.', false);
             };
-            
-            reader.onerror = (error) => {
-                log('FileReader error: ' + error);
-                showStatus('Feil ved lesing av fil', true);
-            };
-            
-            log('Starting file read...');
+
+            reader.onerror = () => showStatus('Error reading file.', true);
             reader.readAsText(file, 'UTF-8');
         }
-        
+
         function parseCSV(csvText) {
-            log('Parsing CSV...');
-            const lines = csvText.trim().split('\n').filter(line => line.trim());
-            log(`Found ${lines.length} lines total`);
-            
-            if (lines.length < 2) {
-                log('Error: Not enough lines in CSV');
-                return [];
-            }
-            
-            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-            log(`Headers: ${JSON.stringify(headers)}`);
-            
+            const lines = csvText.trim().split(/\r?\n/).filter(line => line.trim());
+            if (lines.length < 2) return [];
+
+            const headers = parseCSVLine(lines[0]);
             const data = [];
             let errors = 0;
-            
+
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i];
-                
-                // Skip total row
                 if (line.includes('Total Records') || line.trim() === '') continue;
-                
-                // Handle quoted fields
-                const values = [];
-                let inQuotes = false;
-                let current = '';
-                
-                for (let char of line) {
-                    if (char === '"') {
-                        inQuotes = !inQuotes;
-                    } else if (char === ',' && !inQuotes) {
-                        values.push(current.trim().replace(/"/g, ''));
-                        current = '';
-                    } else {
-                        current += char;
-                    }
-                }
-                values.push(current.trim().replace(/"/g, ''));
-                
-                if (values.length === headers.length) {
-                    const row = {};
-                    headers.forEach((header, idx) => {
-                        let val = values[idx];
-                        
-                        // Konverter tallfelt
-                        if (header.includes('Tokens') || header === 'Price (USD)') {
-                            val = parseFloat(val) || 0;
-                        }
-                        
-                        row[header] = val;
-                    });
-                    
-                    data.push(row);
-                } else {
+
+                const values = parseCSVLine(line);
+                if (values.length !== headers.length) {
                     errors++;
-                    if (errors < 3) {
-                        log(`Parse error line ${i}: expected ${headers.length} fields, got ${values.length}`);
-                    }
+                    continue;
                 }
+
+                const row = {};
+                headers.forEach((header, idx) => {
+                    let val = values[idx];
+                    if (header.includes('Tokens') || header === 'Price (USD)') {
+                        val = parseFloat(val) || 0;
+                    }
+                    row[header] = val;
+                });
+                data.push(row);
             }
-            
-            log(`Parsed ${data.length} rows, ${errors} errors`);
+
+            log(`Parsed ${data.length} rows${errors ? `, ${errors} rows skipped` : ''}`);
             return data;
         }
-        
+
+        function parseCSVLine(line) {
+            const values = [];
+            let inQuotes = false;
+            let current = '';
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                const next = line[i + 1];
+
+                if (char === '"' && inQuotes && next === '"') {
+                    current += '"';
+                    i++;
+                } else if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    values.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+
+            values.push(current.trim());
+            return values;
+        }
+
         function formatSize(bytes) {
             if (bytes < 1024) return bytes + ' B';
             if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
             return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
         }
-        
+
         function formatNumber(num) {
             return Math.floor(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
         }
-        
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         function generateReport() {
-            log('Generating report...');
-            
-            if (!rawData || rawData.length === 0) {
-                log('No data loaded!');
-                showStatus('Ingen data funnen. Last opp ei CSV-fil først.', true);
+            if (!rawData) {
+                showStatus('No data found. Please upload a CSV file first.', true);
                 return;
             }
-            
+
             csvData = parseCSV(rawData);
-            log(`Loaded ${csvData.length} data rows`);
-            
             if (csvData.length === 0) {
-                showStatus('Kunne ikkje lese data frå fila', true);
+                showStatus('Could not read any data from the file.', true);
                 return;
             }
-            
+
             const stats = calculateStats(csvData);
-            log('Stats calculated');
-            
             renderSummary(stats);
             renderModelTable(stats.models);
             renderDailyTable(stats.daily);
             renderAnomalies(csvData);
-            
+
             uploadSection.style.display = 'none';
             reportSection.classList.add('active');
-            
-            log('Report rendered successfully');
             window.scrollTo(0, 0);
         }
-        
+
         function calculateStats(data) {
             const models = {};
             const daily = {};
-            
+
             data.forEach(row => {
-                // Per modell
                 const model = row.Model || 'unknown';
                 if (!models[model]) {
                     models[model] = { count: 0, totalCost: 0, totalInput: 0, totalOutput: 0 };
@@ -421,16 +405,13 @@
                 models[model].totalCost += row['Price (USD)'] || 0;
                 models[model].totalInput += row['Input Tokens'] || 0;
                 models[model].totalOutput += row['Output Tokens'] || 0;
-                
-                // Per dag
+
                 const date = row.Date || 'unknown';
-                if (!daily[date]) {
-                    daily[date] = { cost: 0, count: 0 };
-                }
+                if (!daily[date]) daily[date] = { cost: 0, count: 0 };
                 daily[date].cost += row['Price (USD)'] || 0;
                 daily[date].count++;
             });
-            
+
             return {
                 totalCost: data.reduce((sum, r) => sum + (r['Price (USD)'] || 0), 0),
                 totalRequests: data.length,
@@ -441,130 +422,183 @@
                 daily
             };
         }
-        
+
         function renderSummary(stats) {
             const container = document.getElementById('summaryMetrics');
+            const averageDailyCost = stats.uniqueDates > 0 ? stats.totalCost / stats.uniqueDates : 0;
             container.innerHTML = `
                 <div class="metric-card">
                     <div class="metric-value">$${stats.totalCost.toFixed(2)}</div>
-                    <div class="metric-label">Totalkostnad</div>
+                    <div class="metric-label">Total cost</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value">${formatNumber(stats.totalRequests)}</div>
-                    <div class="metric-label">Førespurnadar</div>
+                    <div class="metric-label">Requests</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value">${formatNumber(Math.round(stats.totalInput / 1000000))}M</div>
-                    <div class="metric-label">Input-tokenar</div>
+                    <div class="metric-label">Input tokens</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-value">$${(stats.totalCost / stats.uniqueDates).toFixed(2)}</div>
-                    <div class="metric-label">Per dag</div>
+                    <div class="metric-value">$${averageDailyCost.toFixed(2)}</div>
+                    <div class="metric-label">Per day</div>
                 </div>
             `;
-            log('Summary rendered');
         }
-        
+
+        function sortRows(rows, key, type, direction) {
+            const multiplier = direction === 'asc' ? 1 : -1;
+            return [...rows].sort((a, b) => {
+                let result = 0;
+                if (type === 'number') {
+                    result = Number(a[key]) - Number(b[key]);
+                } else {
+                    result = String(a[key]).localeCompare(String(b[key]), undefined, { numeric: true, sensitivity: 'base' });
+                }
+                return result * multiplier;
+            });
+        }
+
+        function renderSortableTable(containerId, tableId, columns, rows, defaultSort) {
+            const container = document.getElementById(containerId);
+            let sortKey = defaultSort.key;
+            let sortDirection = defaultSort.direction;
+
+            function render() {
+                const sortedRows = sortRows(rows, sortKey, columns.find(c => c.key === sortKey).type, sortDirection);
+
+                let html = `<div class="table-wrapper"><table id="${tableId}"><thead><tr>`;
+                columns.forEach(column => {
+                    const isActive = sortKey === column.key;
+                    const ariaSort = isActive ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none';
+                    const indicator = isActive ? (sortDirection === 'asc' ? '▲' : '▼') : '↕';
+                    html += `
+                        <th scope="col">
+                            <button class="sort-button" type="button" data-sort-key="${escapeHtml(column.key)}" aria-sort="${ariaSort}">
+                                <span>${escapeHtml(column.label)}</span>
+                                <span class="sort-indicator" aria-hidden="true">${indicator}</span>
+                            </button>
+                        </th>`;
+                });
+                html += '</tr></thead><tbody>';
+
+                sortedRows.forEach(row => {
+                    html += '<tr>';
+                    columns.forEach(column => {
+                        html += `<td>${column.render(row)}</td>`;
+                    });
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table></div>';
+                container.innerHTML = html;
+
+                container.querySelectorAll('.sort-button').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const clickedKey = button.dataset.sortKey;
+                        if (clickedKey === sortKey) {
+                            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                        } else {
+                            sortKey = clickedKey;
+                            sortDirection = 'asc';
+                        }
+                        render();
+                    });
+                });
+            }
+
+            render();
+        }
+
         function renderModelTable(models) {
-            const sorted = Object.entries(models).sort((a, b) => b[1].totalCost - a[1].totalCost);
-            
-            let html = '<table><tr><th>Modell</th><th>Føresp.</th><th>Total ($)</th><th>Gj.snitt ($)</th></tr>';
-            
-            sorted.forEach(([name, stats]) => {
-                const avg = stats.count > 0 ? stats.totalCost / stats.count : 0;
-                html += `<tr>
-                    <td><strong>${name}</strong></td>
-                    <td>${formatNumber(stats.count)}</td>
-                    <td>$${stats.totalCost.toFixed(2)}</td>
-                    <td>$${avg.toFixed(4)}</td>
-                </tr>`;
-            });
-            
-            html += '</table>';
-            document.getElementById('modelTableContainer').innerHTML = html;
-            log(`Model table rendered with ${sorted.length} models`);
+            const rows = Object.entries(models).map(([name, stats]) => ({
+                name,
+                requests: stats.count,
+                total: stats.totalCost,
+                average: stats.count > 0 ? stats.totalCost / stats.count : 0
+            }));
+
+            renderSortableTable('modelTableContainer', 'modelTable', [
+                { key: 'name', label: 'Model', type: 'text', render: row => `<strong>${escapeHtml(row.name)}</strong>` },
+                { key: 'requests', label: 'Requests', type: 'number', render: row => formatNumber(row.requests) },
+                { key: 'total', label: 'Total ($)', type: 'number', render: row => `$${row.total.toFixed(2)}` },
+                { key: 'average', label: 'Average ($)', type: 'number', render: row => `$${row.average.toFixed(4)}` }
+            ], rows, { key: 'total', direction: 'desc' });
         }
-        
+
         function renderDailyTable(daily) {
-            const sorted = Object.entries(daily).sort((a, b) => a[0].localeCompare(b[0]));
-            
-            let html = '<table><tr><th>Dato</th><th>Kostnad ($)</th><th>Førespurnadar</th></tr>';
-            
-            sorted.forEach(([date, stats]) => {
-                html += `<tr>
-                    <td>${date}</td>
-                    <td>$${stats.cost.toFixed(2)}</td>
-                    <td>${formatNumber(stats.count)}</td>
-                </tr>`;
-            });
-            
-            html += '</table>';
-            document.getElementById('dailyTableContainer').innerHTML = html;
-            log('Daily table rendered');
+            const rows = Object.entries(daily).map(([date, stats]) => ({
+                date,
+                cost: stats.cost,
+                requests: stats.count
+            }));
+
+            renderSortableTable('dailyTableContainer', 'dailyTable', [
+                { key: 'date', label: 'Date', type: 'text', render: row => escapeHtml(row.date) },
+                { key: 'cost', label: 'Cost ($)', type: 'number', render: row => `$${row.cost.toFixed(2)}` },
+                { key: 'requests', label: 'Requests', type: 'number', render: row => formatNumber(row.requests) }
+            ], rows, { key: 'date', direction: 'asc' });
         }
-        
+
         function renderAnomalies(data) {
             const anomaliesContainer = document.getElementById('anomalies');
             const boxes = [];
-            
-            // Gratis førespurnadar
+
             const free = data.filter(r => (r['Price (USD)'] || 0) === 0);
             if (free.length > 0) {
                 boxes.push({
                     type: 'success-box',
-                    title: `${free.length} gratis førespurnadar`,
+                    title: `${free.length} free requests`,
                     items: free.slice(0, 5).map(r => `${r.Model} (${formatNumber(r['Input Tokens'])} tokens)`)
                 });
             }
-            
-            // Monsterkontekstar (>100k input)
+
             const big = data.filter(r => (r['Input Tokens'] || 0) > 100000);
             if (big.length > 0) {
                 boxes.push({
                     type: 'warning-box',
-                    title: `${big.length} "monsterkontekstar" (>100k tokens)`,
-                    items: big.sort((a,b) => (b['Input Tokens']||0) - (a['Input Tokens']||0))
+                    title: `${big.length} large contexts (>100k input tokens)`,
+                    items: [...big]
+                        .sort((a, b) => (b['Input Tokens'] || 0) - (a['Input Tokens'] || 0))
                         .slice(0, 5)
-                        .map(r => `${r.Model}: ${formatNumber(r['Input Tokens'])} tokens, $${(r['Price (USD)']||0).toFixed(2)}`)
+                        .map(r => `${r.Model}: ${formatNumber(r['Input Tokens'])} tokens, $${(r['Price (USD)'] || 0).toFixed(2)}`)
                 });
             }
-            
-            // Høgaste kostnadar
-            const topCosts = [...data].sort((a,b) => (b['Price (USD)']||0) - (a['Price (USD)']||0)).slice(0, 3);
+
+            const topCosts = [...data]
+                .sort((a, b) => (b['Price (USD)'] || 0) - (a['Price (USD)'] || 0))
+                .slice(0, 3);
             boxes.push({
                 type: 'finding-box',
-                title: 'Topp 3 dyraste enkeltforespurnadar',
-                items: topCosts.map(r => `${r.Model} den ${r.Date} kl. ${r.Time}: $${(r['Price (USD)']||0).toFixed(2)}`)
+                title: 'Top 3 most expensive individual requests',
+                items: topCosts.map(r => `${r.Model} on ${r.Date} at ${r.Time}: $${(r['Price (USD)'] || 0).toFixed(2)}`)
             });
-            
-            // Tomme førespurnadar
+
             const empty = data.filter(r => (r['Input Tokens'] || 0) === 0 || (r['Output Tokens'] || 0) === 0);
             if (empty.length > 0) {
                 boxes.push({
                     type: 'warning-box',
-                    title: `${empty.length} førespurnadar med 0 tokens`,
-                    items: empty.slice(0, 5).map(r => `${r.Model} den ${r.Date} kl. ${r.Time}`)
+                    title: `${empty.length} requests with 0 tokens`,
+                    items: empty.slice(0, 5).map(r => `${r.Model} on ${r.Date} at ${r.Time}`)
                 });
             }
-            
+
             if (boxes.length === 0) {
-                anomaliesContainer.innerHTML = '<div class="success-box">Ingen anomaliar funne ✨</div>';
-                log('No anomalies detected');
+                anomaliesContainer.innerHTML = '<div class="success-box">No anomalies found ✨</div>';
                 return;
             }
-            
+
             let html = '';
             boxes.forEach(box => {
                 html += `<div class="${box.type}">
-                    <h3>${box.title}</h3>
+                    <h3>${escapeHtml(box.title)}</h3>
                     <ul style="margin: 10px 0; padding-left: 20px;">
-                        ${box.items.map(item => `<li>${item}</li>`).join('')}
+                        ${box.items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
                     </ul>
                 </div>`;
             });
-            
+
             anomaliesContainer.innerHTML = html;
-            log(`Anomalies rendered: ${boxes.length} sections`);
         }
     </script>
 </body>
