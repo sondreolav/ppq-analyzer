@@ -5,39 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PPQ Cost Analyzer</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
-        }
-        
-        header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-        
-        header p {
-            opacity: 0.9;
-        }
-        
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { text-align: center; color: white; margin-bottom: 30px; }
+        header h1 { font-size: 2rem; margin-bottom: 10px; }
+        header p { opacity: 0.9; }
         .upload-section {
             background: white;
             border-radius: 12px;
@@ -46,25 +24,17 @@
             margin-bottom: 30px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
-        
         .upload-area {
             border: 3px dashed #ccc;
             border-radius: 8px;
-            padding: 40px;
+            padding: 60px 20px;
             cursor: pointer;
             transition: all 0.3s;
         }
-        
-        .upload-area:hover {
-            border-color: #6d4aff;
-            background: #f8f5ff;
-        }
-        
-        .upload-area.dragover {
+        .upload-area:hover, .upload-area.dragover {
             border-color: #6d4aff;
             background: #f0ebff;
         }
-        
         .file-info {
             display: none;
             margin-top: 20px;
@@ -73,7 +43,6 @@
             border-radius: 8px;
             color: #2e7d32;
         }
-        
         button.analyze-btn {
             background: #6d4aff;
             color: white;
@@ -83,14 +52,10 @@
             border-radius: 8px;
             cursor: pointer;
             margin-top: 20px;
-            transition: all 0.3s;
+            display: none;
         }
-        
-        button.analyze-btn:hover {
-            background: #5a3fd6;
-            transform: translateY(-2px);
-        }
-        
+        button.analyze-btn:hover { background: #5a3fd6; }
+        button.analyze-btn:disabled { background: #ccc; cursor: not-allowed; }
         .report-section {
             background: white;
             border-radius: 12px;
@@ -98,45 +63,28 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             display: none;
         }
-        
-        .report-section.active {
-            display: block;
-        }
-        
+        .report-section.active { display: block; }
         h2 {
             color: #6d4aff;
             margin: 30px 0 20px 0;
             padding-bottom: 10px;
             border-bottom: 2px solid #eee;
         }
-        
-        h2:first-of-type {
-            margin-top: 0;
-        }
-        
+        h2:first-of-type { margin-top: 0; }
         table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
             font-size: 0.95rem;
+            overflow-x: auto;
         }
-        
         th, td {
             padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
-        
-        th {
-            background: #f8f5ff;
-            color: #6d4aff;
-            font-weight: 600;
-        }
-        
-        tr:hover {
-            background: #faf9fc;
-        }
-        
+        th { background: #f8f5ff; color: #6d4aff; font-weight: 600; }
+        tr:hover { background: #faf9fc; }
         .metric-card {
             display: inline-block;
             background: linear-gradient(135deg, #6d4aff 0%, #8b5cf6 100%);
@@ -144,47 +92,34 @@
             padding: 20px 30px;
             border-radius: 8px;
             margin: 10px;
-            min-width: 200px;
+            min-width: 180px;
             box-shadow: 0 4px 15px rgba(109,74,255,0.3);
         }
-        
-        .metric-value {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .metric-label {
-            opacity: 0.9;
-            font-size: 0.9rem;
-        }
-        
-        .finding-box {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
+        .metric-value { font-size: 1.8rem; font-weight: bold; margin-bottom: 5px; }
+        .metric-label { opacity: 0.9; font-size: 0.9rem; }
+        .finding-box, .warning-box, .success-box {
             padding: 15px 20px;
             margin: 20px 0;
             border-radius: 4px;
+            border-left: 4px solid;
         }
-        
-        .warning-box {
-            background: #f8d7da;
-            border-left: 4px solid #dc3545;
-            padding: 15px 20px;
+        .finding-box { background: #fff3cd; border-color: #ffc107; }
+        .warning-box { background: #f8d7da; border-color: #dc3545; }
+        .success-box { background: #d4edda; border-color: #28a745; }
+        .debug-log {
+            background: #1a1a2e;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 8px;
             margin: 20px 0;
-            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
         }
-        
-        .success-box {
-            background: #d4edda;
-            border-left: 4px solid #28a745;
-            padding: 15px 20px;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-        
         .privacy-note {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.15);
             color: white;
             padding: 15px;
             border-radius: 8px;
@@ -192,71 +127,83 @@
             margin-top: 20px;
             font-size: 0.9rem;
         }
-        
-        @media (max-width: 768px) {
-            .metric-card {
-                display: block;
-                margin: 10px 0;
-            }
-            
-            table {
-                font-size: 0.85rem;
-            }
-            
-            th, td {
-                padding: 8px 10px;
-            }
+        .status-msg {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: none;
         }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .status-success { background: #d4edda; color: #155724; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>📊 PPQ Cost Analyzer</h1>
-            <p>Analyser PayPerQ-bruken din - alle data held seg i nettlesaren din</p>
+            <p>Drag & drop CSV-fila di her - alle data held seg lokalt!</p>
         </header>
         
         <section class="upload-section" id="uploadSection">
-            <h2>📁 Last opp CSV-fil</h2>
-            <p style="margin-bottom: 20px; color: #666;">Drag & drop eller klikk for å velje fil</p>
+            <div class="upload-area" id="uploadArea">
+                <div style="font-size: 3rem; margin-bottom: 15px;">📄</div>
+                <div style="font-size: 1.2rem; margin-bottom: 10px;"><strong>Drag & drop CSV-fila her</strong></div>
+                <div style="color: #666;">eller klikk for å velje fil</div>
+            </div>
             
             <input type="file" id="fileInput" accept=".csv" style="display:none">
-            <div class="upload-area" id="uploadArea">
-                <div style="font-size: 3rem; margin-bottom: 10px;">📄</div>
-                <div><strong>PayPerQ-Usage_*.csv</strong></div>
-            </div>
+            
+            <div class="status-msg" id="statusMsg"></div>
             
             <div class="file-info" id="fileInfo"></div>
             
-            <button class="analyze-btn" id="analyzeBtn" style="display:none">Analyser data</button>
+            <button class="analyze-btn" id="analyzeBtn">Analyser data</button>
+            
+            <div class="debug-log" id="debugLog">
+                <strong>Debug:</strong><br>
+            </div>
         </section>
         
         <section class="report-section" id="reportSection">
             <div class="privacy-note">
-                🔒 **Privacy**: All analyse skjer lokalt i nettlesaren. Ingen data blir sende til serverar.
+                🔒 Alle data blir handtert lokalt i nettlesaren din. Ingen data blir sende ut.
             </div>
             
             <h2>📊 Sammendrag</h2>
             <div id="summaryMetrics"></div>
             
             <h2>💰 Kostnad per modell</h2>
-            <table id="modelTable"></table>
+            <div id="modelTableContainer"></div>
             
             <h2>📅 Dagleg fordeling</h2>
-            <table id="dailyTable"></table>
+            <div id="dailyTableContainer"></div>
             
             <h2>⚠️ Anomalier</h2>
             <div id="anomalies"></div>
-            
-            <h2>🕐 Timefordeling (aktivitet)</h2>
-            <table id="hourlyTable"></table>
         </section>
     </div>
     
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
+        // Debug-funksjon
+        function log(msg) {
+            const debugLog = document.getElementById('debugLog');
+            debugLog.style.display = 'block';
+            debugLog.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+            console.log('[PPQ Analyzer]', msg);
+        }
+        
+        function showStatus(msg, isError = false) {
+            const statusEl = document.getElementById('statusMsg');
+            statusEl.style.display = 'block';
+            statusEl.className = 'status-msg ' + (isError ? 'status-error' : 'status-success');
+            statusEl.textContent = msg;
+        }
+        
         // Globale variablar
         let csvData = [];
+        let rawData = '';
+        
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const fileInfo = document.getElementById('fileInfo');
@@ -264,71 +211,157 @@
         const reportSection = document.getElementById('reportSection');
         const uploadSection = document.getElementById('uploadSection');
         
-        // Drag & drop eventar
-        uploadArea.addEventListener('click', () => fileInput.click());
+        log('Init start...');
         
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
+        // Klikk for å open filveljar
+        uploadArea.addEventListener('click', () => {
+            log('Upload area clicked');
+            fileInput.click();
         });
         
-        uploadArea.addEventListener('dragleave', () => {
+        // Drag & drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.add('dragover');
+            log('Drag over');
+        });
+        
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             uploadArea.classList.remove('dragover');
+            log('Drag leave');
         });
         
         uploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             uploadArea.classList.remove('dragover');
+            log('Drop event');
+            
             const files = e.dataTransfer.files;
-            if (files.length > 0) handleFile(files[0]);
+            log(`Dropped ${files.length} file(s)`);
+            
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
         });
         
+        // Filveljar
         fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+            log(`File input change, ${e.target.files.length} file(s)`);
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
         });
         
-        analyzeBtn.addEventListener('click', generateReport);
+        // Analyse-knapp
+        analyzeBtn.addEventListener('click', () => {
+            log('Analyze button clicked');
+            generateReport();
+        });
         
         function handleFile(file) {
-            if (!file.name.endsWith('.csv')) {
-                alert('Vennligst last opp ei .csv-fil');
+            log(`Handling file: ${file.name} (${formatSize(file.size)} bytes)`);
+            
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                showStatus('Feil! Vennligst last opp ei .csv-fil', true);
+                log('Error: Not a CSV file');
                 return;
             }
             
-            fileInfo.style.display = 'block';
-            fileInfo.innerHTML = `✅ <strong>${file.name}</strong> (${formatSize(file.size)})`;
-            analyzeBtn.style.display = 'inline-block';
-            
             const reader = new FileReader();
-            reader.onload = (e) => {
-                csvData = parseCSV(e.target.result);
+            
+            reader.onload = (event) => {
+                rawData = event.target.result;
+                log(`File read successfully, ${rawData.length} characters`);
+                
+                // Sjekk første raden for debugging
+                const firstLines = rawData.split('\n').slice(0, 3);
+                log('First 3 lines:');
+                firstLines.forEach((line, i) => log(`  Line ${i}: ${line.substring(0, 100)}`));
+                
+                fileInfo.style.display = 'block';
+                fileInfo.innerHTML = `✅ <strong>${file.name}</strong><br>Storleik: ${formatSize(file.size)} | Ready to analyze`;
+                
+                analyzeBtn.style.display = 'inline-block';
+                analyzeBtn.disabled = false;
+                
+                showStatus('Filen er lasta opp! Trykk på "Analyser data" for å starte.', false);
             };
-            reader.readAsText(file);
+            
+            reader.onerror = (error) => {
+                log('FileReader error: ' + error);
+                showStatus('Feil ved lesing av fil', true);
+            };
+            
+            log('Starting file read...');
+            reader.readAsText(file, 'UTF-8');
         }
         
         function parseCSV(csvText) {
-            const lines = csvText.trim().split('\n');
-            const headers = lines[0].split(',').map(h => h.trim());
-            const data = [];
+            log('Parsing CSV...');
+            const lines = csvText.trim().split('\n').filter(line => line.trim());
+            log(`Found ${lines.length} lines total`);
             
-            for (let i = 1; i < lines.length && !lines[i].includes('Total Records'); i++) {
-                const values = lines[i].split(',');
+            if (lines.length < 2) {
+                log('Error: Not enough lines in CSV');
+                return [];
+            }
+            
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            log(`Headers: ${JSON.stringify(headers)}`);
+            
+            const data = [];
+            let errors = 0;
+            
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                
+                // Skip total row
+                if (line.includes('Total Records') || line.trim() === '') continue;
+                
+                // Handle quoted fields
+                const values = [];
+                let inQuotes = false;
+                let current = '';
+                
+                for (let char of line) {
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current.trim().replace(/"/g, ''));
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim().replace(/"/g, ''));
+                
                 if (values.length === headers.length) {
                     const row = {};
                     headers.forEach((header, idx) => {
-                        let val = values[idx]?.trim();
+                        let val = values[idx];
                         
-                        // Konverter tall
-                        if (header.includes('Tokens') || header.includes('Price')) {
+                        // Konverter tallfelt
+                        if (header.includes('Tokens') || header === 'Price (USD)') {
                             val = parseFloat(val) || 0;
                         }
                         
                         row[header] = val;
                     });
+                    
                     data.push(row);
+                } else {
+                    errors++;
+                    if (errors < 3) {
+                        log(`Parse error line ${i}: expected ${headers.length} fields, got ${values.length}`);
+                    }
                 }
             }
             
+            log(`Parsed ${data.length} rows, ${errors} errors`);
             return data;
         }
         
@@ -339,83 +372,73 @@
         }
         
         function formatNumber(num) {
-            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+            return Math.floor(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
         }
         
         function generateReport() {
-            if (csvData.length === 0) {
-                alert('Ingen data funnen');
+            log('Generating report...');
+            
+            if (!rawData || rawData.length === 0) {
+                log('No data loaded!');
+                showStatus('Ingen data funnen. Last opp ei CSV-fil først.', true);
                 return;
             }
             
-            // Beregn statistsikar
+            csvData = parseCSV(rawData);
+            log(`Loaded ${csvData.length} data rows`);
+            
+            if (csvData.length === 0) {
+                showStatus('Kunne ikkje lese data frå fila', true);
+                return;
+            }
+            
             const stats = calculateStats(csvData);
+            log('Stats calculated');
             
-            // Render summary
             renderSummary(stats);
-            
-            // Render modell-tabell
             renderModelTable(stats.models);
-            
-            // Render dagleg tabell
             renderDailyTable(stats.daily);
-            
-            // Render anomalier
             renderAnomalies(csvData);
             
-            // Render timefordeling
-            renderHourlyTable(csvData);
-            
-            // Vis rapport
             uploadSection.style.display = 'none';
             reportSection.classList.add('active');
             
-            // Scroll to top
+            log('Report rendered successfully');
             window.scrollTo(0, 0);
         }
         
         function calculateStats(data) {
             const models = {};
             const daily = {};
-            const hourly = {};
             
             data.forEach(row => {
                 // Per modell
-                const model = row.Model;
+                const model = row.Model || 'unknown';
                 if (!models[model]) {
                     models[model] = { count: 0, totalCost: 0, totalInput: 0, totalOutput: 0 };
                 }
                 models[model].count++;
-                models[model].totalCost += row['Price (USD)'];
-                models[model].totalInput += row['Input Tokens'];
-                models[model].totalOutput += row['Output Tokens'];
+                models[model].totalCost += row['Price (USD)'] || 0;
+                models[model].totalInput += row['Input Tokens'] || 0;
+                models[model].totalOutput += row['Output Tokens'] || 0;
                 
                 // Per dag
-                const date = row.Date;
+                const date = row.Date || 'unknown';
                 if (!daily[date]) {
                     daily[date] = { cost: 0, count: 0 };
                 }
-                daily[date].cost += row['Price (USD)'];
+                daily[date].cost += row['Price (USD)'] || 0;
                 daily[date].count++;
-                
-                // Per time
-                const hour = parseInt(row.Time.split(':')[0]);
-                if (!hourly[hour]) {
-                    hourly[hour] = { cost: 0, count: 0 };
-                }
-                hourly[hour].cost += row['Price (USD)'];
-                hourly[hour].count++;
             });
             
             return {
-                totalCost: data.reduce((sum, r) => sum + r['Price (USD)'], 0),
+                totalCost: data.reduce((sum, r) => sum + (r['Price (USD)'] || 0), 0),
                 totalRequests: data.length,
-                totalInput: data.reduce((sum, r) => sum + r['Input Tokens'], 0),
-                totalOutput: data.reduce((sum, r) => sum + r['Output Tokens'], 0),
+                totalInput: data.reduce((sum, r) => sum + (r['Input Tokens'] || 0), 0),
+                totalOutput: data.reduce((sum, r) => sum + (r['Output Tokens'] || 0), 0),
                 uniqueDates: new Set(data.map(r => r.Date)).size,
                 models,
-                daily,
-                hourly
+                daily
             };
         }
         
@@ -431,7 +454,7 @@
                     <div class="metric-label">Førespurnadar</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-value">${formatNumber(stats.totalInput / 1000000).replace(/\.00$/, '')}M</div>
+                    <div class="metric-value">${formatNumber(Math.round(stats.totalInput / 1000000))}M</div>
                     <div class="metric-label">Input-tokenar</div>
                 </div>
                 <div class="metric-card">
@@ -439,16 +462,16 @@
                     <div class="metric-label">Per dag</div>
                 </div>
             `;
+            log('Summary rendered');
         }
         
         function renderModelTable(models) {
-            const sorted = Object.entries(models)
-                .sort((a, b) => b[1].totalCost - a[1].totalCost);
+            const sorted = Object.entries(models).sort((a, b) => b[1].totalCost - a[1].totalCost);
             
-            let html = '<tr><th>Modell</th><th>Føresp.</th><th>Total ($)</th><th>Gj.snitt ($)</th></tr>';
+            let html = '<table><tr><th>Modell</th><th>Føresp.</th><th>Total ($)</th><th>Gj.snitt ($)</th></tr>';
             
             sorted.forEach(([name, stats]) => {
-                const avg = stats.totalCost / stats.count;
+                const avg = stats.count > 0 ? stats.totalCost / stats.count : 0;
                 html += `<tr>
                     <td><strong>${name}</strong></td>
                     <td>${formatNumber(stats.count)}</td>
@@ -457,13 +480,15 @@
                 </tr>`;
             });
             
-            document.getElementById('modelTable').innerHTML = html;
+            html += '</table>';
+            document.getElementById('modelTableContainer').innerHTML = html;
+            log(`Model table rendered with ${sorted.length} models`);
         }
         
         function renderDailyTable(daily) {
             const sorted = Object.entries(daily).sort((a, b) => a[0].localeCompare(b[0]));
             
-            let html = '<tr><th>Dato</th><th>Kostnad ($)</th><th>Førespurnadar</th></tr>';
+            let html = '<table><tr><th>Dato</th><th>Kostnad ($)</th><th>Førespurnadar</th></tr>';
             
             sorted.forEach(([date, stats]) => {
                 html += `<tr>
@@ -473,7 +498,9 @@
                 </tr>`;
             });
             
-            document.getElementById('dailyTable').innerHTML = html;
+            html += '</table>';
+            document.getElementById('dailyTableContainer').innerHTML = html;
+            log('Daily table rendered');
         }
         
         function renderAnomalies(data) {
@@ -481,37 +508,37 @@
             const boxes = [];
             
             // Gratis førespurnadar
-            const free = data.filter(r => r['Price (USD)'] === 0);
+            const free = data.filter(r => (r['Price (USD)'] || 0) === 0);
             if (free.length > 0) {
                 boxes.push({
                     type: 'success-box',
                     title: `${free.length} gratis førespurnadar`,
-                    items: free.slice(0, 5).map(r => `${r.Model} (${r.Input Tokens} tokens)`)
+                    items: free.slice(0, 5).map(r => `${r.Model} (${formatNumber(r['Input Tokens'])} tokens)`)
                 });
             }
             
-            // Monsterkontekstar
-            const big = data.filter(r => r['Input Tokens'] > 100000);
+            // Monsterkontekstar (>100k input)
+            const big = data.filter(r => (r['Input Tokens'] || 0) > 100000);
             if (big.length > 0) {
                 boxes.push({
                     type: 'warning-box',
                     title: `${big.length} "monsterkontekstar" (>100k tokens)`,
-                    items: big.sort((a,b) => b['Input Tokens'] - a['Input Tokens'])
+                    items: big.sort((a,b) => (b['Input Tokens']||0) - (a['Input Tokens']||0))
                         .slice(0, 5)
-                        .map(r => `${r.Model}: ${r['Input Tokens']} tokens, $${r['Price (USD)'].toFixed(2)}`)
+                        .map(r => `${r.Model}: ${formatNumber(r['Input Tokens'])} tokens, $${(r['Price (USD)']||0).toFixed(2)}`)
                 });
             }
             
             // Høgaste kostnadar
-            const topCosts = [...data].sort((a,b) => b['Price (USD)'] - a['Price (USD)']).slice(0, 3);
+            const topCosts = [...data].sort((a,b) => (b['Price (USD)']||0) - (a['Price (USD)']||0)).slice(0, 3);
             boxes.push({
                 type: 'finding-box',
                 title: 'Topp 3 dyraste enkeltforespurnadar',
-                items: topCosts.map(r => `${r.Model} den ${r.Date} kl. ${r.Time}: $${r['Price (USD)'].toFixed(2)}`)
+                items: topCosts.map(r => `${r.Model} den ${r.Date} kl. ${r.Time}: $${(r['Price (USD)']||0).toFixed(2)}`)
             });
             
             // Tomme førespurnadar
-            const empty = data.filter(r => r['Input Tokens'] === 0 || r['Output Tokens'] === 0);
+            const empty = data.filter(r => (r['Input Tokens'] || 0) === 0 || (r['Output Tokens'] || 0) === 0);
             if (empty.length > 0) {
                 boxes.push({
                     type: 'warning-box',
@@ -522,6 +549,7 @@
             
             if (boxes.length === 0) {
                 anomaliesContainer.innerHTML = '<div class="success-box">Ingen anomaliar funne ✨</div>';
+                log('No anomalies detected');
                 return;
             }
             
@@ -536,46 +564,7 @@
             });
             
             anomaliesContainer.innerHTML = html;
-        }
-        
-        function renderHourlyTable(data) {
-            const hourly = {};
-            data.forEach(r => {
-                const hour = parseInt(r.Time.split(':')[0]);
-                if (!hourly[hour]) {
-                    hourly[hour] = { cost: 0, count: 0 };
-                }
-                hourly[hour].cost += r['Price (USD)'];
-                hourly[hour].count++;
-            });
-            
-            const sorted = Object.entries(hourly).sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
-            
-            let html = '<tr><th>Time</th><th>Kostnad ($)</th><th>Førespurnadar</th></tr>';
-            let peakHour = null, peakCost = 0;
-            
-            sorted.forEach(([hour, stats]) => {
-                if (stats.cost > peakCost) {
-                    peakCost = stats.cost;
-                    peakHour = hour;
-                }
-                html += `<tr>
-                    <td>${parseInt(hour):02d}:00</td>
-                    <td>$${stats.cost.toFixed(2)}</td>
-                    <td>${formatNumber(stats.count)}</td>
-                </tr>`;
-            });
-            
-            document.getElementById('hourlyTable').innerHTML = html;
-            
-            if (peakHour !== null) {
-                const peakBox = document.createElement('div');
-                peakBox.className = 'success-box';
-                peakBox.innerHTML = `
-                    <strong>Høgaste kostnad:</strong> ${(parseInt(peakHour)):02d}:00 med $${peakCost.toFixed(2)}
-                `;
-                document.getElementById('hourlyTable').appendChild(peakBox);
-            }
+            log(`Anomalies rendered: ${boxes.length} sections`);
         }
     </script>
 </body>
